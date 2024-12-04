@@ -1,0 +1,7 @@
+
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>14_23_lol.json</file>
+    </qresource>
+</RCC>
