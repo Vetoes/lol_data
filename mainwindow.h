@@ -6,7 +6,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QLabel>
-#include "Champions.h"
+#include "champions.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT //moc meta object system
