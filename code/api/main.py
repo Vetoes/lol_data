@@ -1,4 +1,3 @@
-
 import requests
 import json
 from datetime import datetime
@@ -10,47 +9,67 @@ load_dotenv()
 RIOT_API_KEY = os.getenv('RIOT_API_KEY')
 
 class RiotAPI:
-    def __init__(self):
+
+    def __init__(self, region="kr", routing="asia"):
+        """
+        region options: kr, jp1, na1, euw1, eun1, oc1, br1, la1, la2, ru, tr1
+        routing options: asia, americas, europe, sea
+        """
         self.api_key = RIOT_API_KEY
-        self.base_url = "https://kr.api.riotgames.com"
+        self.region = region
+        self.routing = routing
+        self.base_url = f"https://{region}.api.riotgames.com"
+        self.routing_url = f"https://{routing}.api.riotgames.com"
         self.headers = {
             "X-Riot-Token": self.api_key
         }
 
-    def get_champion_data(self):
+    def get_summoner_by_name(self, game_name, tag_line):
         """
-        Data Dragon에서 최신 챔피언 데이터 가져오기
+        소환사 이름과 태그라인으로 정보 검색
+        game_name: 게임 닉네임
+        tag_line: 태그라인 (예: KR1, NA1 등)
         """
-        version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
-        versions = requests.get(version_url).json()
-        latest_version = versions[0]
+        endpoint = f"/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+        response = requests.get(f"{self.routing_url}{endpoint}", headers=self.headers)
+        account_data = response.json()
+        
+        return account_data
 
-        champion_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
-        response = requests.get(champion_url)
+    def get_match_ids(self, puuid, count=20, queue=None, start_time=None, end_time=None):
+        """
+        PUUID로 매치 ID 목록 가져오기
+        Args:
+            puuid: 플레이어 PUUID
+            count: 가져올 매치 수 (최대 100)
+            queue: 큐 타입 (예: 420=솔랭, 440=자유랭크, 430=일반게임)
+            start_time: 시작 시간 (Unix timestamp)
+            end_time: 종료 시간 (Unix timestamp)
+        """
+        endpoint = f"/lol/match/v5/matches/by-puuid/{puuid}/ids"
+        params = {'count': count}
+
+        if queue:
+            params['queue'] = queue
+        if start_time:
+            params['startTime'] = start_time
+        if end_time:
+            params['endTime'] = end_time
+
+        response = requests.get(f"{self.routing_url}{endpoint}", 
+                                headers=self.headers,
+                                params=params)
         return response.json()
 
-    def get_summoner_by_name(self, summoner_name):
+    def get_match_detail(self, match_id):
         """
-        소환사 이름으로 정보 검색
+        매치 ID로 게임 상세 정보 가져오기
         """
-        endpoint = f"/lol/summoner/v4/summoners/by-name/{summoner_name}"
-        response = requests.get(f"{self.base_url}{endpoint}", headers=self.headers)
+        endpoint = f"/lol/match/v5/matches/{match_id}"
+        response = requests.get(f"{self.routing_url}{endpoint}", 
+                              headers=self.headers)
         return response.json()
 
-    def get_match_history(self, puuid, count=5):
-        """
-        특정 소환사의 최근 게임 기록 가져오기
-        """
-        matches_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count={count}"
-        match_ids = requests.get(matches_url, headers=self.headers).json()
-        
-        matches = []
-        for match_id in match_ids:
-            match_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
-            match_data = requests.get(match_url, headers=self.headers).json()
-            matches.append(match_data)
-        
-        return matches
 
 def main():
     # API 키가 없으면 종료
@@ -62,30 +81,32 @@ def main():
     
     try:
         # 챔피언 데이터 가져오기
-        print("Fetching champion data...")
-        champion_data = api.get_champion_data()
-        
-        # 챔피언 목록 저장
-        with open('champion_data.json', 'w', encoding='utf-8') as f:
-            json.dump(champion_data, f, ensure_ascii=False, indent=2)
-        print("Champion data saved to champion_data.json")
-
         # 소환사 검색 예시
-        summoner_name = input("Enter summoner name: ")
-        summoner = api.get_summoner_by_name(summoner_name)
-        print(f"\nSummoner info for {summoner_name}:")
+        game_name = input("Enter game name: ")
+        tag_line = input("Enter tagline (e.g., KR1): ")
+        summoner = api.get_summoner_by_name(game_name, tag_line)
+
+        print(f"\nSummoner info for {summoner}:")
         print(json.dumps(summoner, indent=2))
 
-        # 최근 게임 기록 가져오기
         if 'puuid' in summoner:
-            print(f"\nFetching recent matches for {summoner_name}...")
-            matches = api.get_match_history(summoner['puuid'], count=3)
-            
-            # 매치 데이터 저장
-            with open('recent_matches.json', 'w', encoding='utf-8') as f:
-                json.dump(matches, f, ensure_ascii=False, indent=2)
-            print("Match data saved to recent_matches.json")
+            puuid = summoner['puuid']
+            print(f"\nFetching recent matches for {game_name}...")
 
+            #bring match id
+            match_ids = api.get_match_ids(puuid,count=5,queue=420,start_time=0)
+            print("\nRecent match IDs:")
+
+            for match_id in match_ids:
+                print(match_id)
+
+            if match_ids:
+                print("\nFetching details for the most recent match...")
+                match_detail = api.get_match_detail(match_ids[0])
+                print(json.dumps(match_detail,indent=2))
+
+
+                
     except requests.exceptions.RequestException as e:
         print(f"Error making API request: {e}")
     except json.JSONDecodeError as e:
