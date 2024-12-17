@@ -12,6 +12,7 @@
     utils.lib.eachDefaultSystem (
       system: let
         pkgs = import nixpkgs {inherit system;};
+        pythonPkgs = pkgs.python3Packages;
       in {
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "template";
@@ -41,6 +42,10 @@
             just
             stdenv.cc.cc
             cmake
+            nlohmann_json
+            qt5.full
+            curl
+            # curlpp
           ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath buildInputs;
