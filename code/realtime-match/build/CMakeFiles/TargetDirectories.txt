@@ -1,0 +1,3 @@
+/home/Tabi/Desktop/lol/code/realtime-match/build/CMakeFiles/league_client.dir
+/home/Tabi/Desktop/lol/code/realtime-match/build/CMakeFiles/edit_cache.dir
+/home/Tabi/Desktop/lol/code/realtime-match/build/CMakeFiles/rebuild_cache.dir

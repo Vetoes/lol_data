@@ -1,0 +1,1 @@
+/nix/store/vh9fsdhgxcnab2qk7vdp2palkkn6j3cp-gcc-wrapper-13.3.0/bin/g++ CMakeFiles/league_client.dir/liveclient.cpp.o -o league_client  -lstdc++fs
